@@ -16,6 +16,12 @@ breaks `dotnet publish -p:GenerateAppxPackageOnBuild=true`. Since
    publish fails with `MSB3030` because `resources.pri` is missing. With a
    stale `resources.pri` in `bin\`, it exits 0 and produces no `.msix`.
 
+Reported as
+[microsoft/WindowsAppSDK#6897](https://github.com/microsoft/WindowsAppSDK/issues/6897)
+(the MSIX tooling's skipped `PrepareForRun`) and
+[on dotnet/sdk#56645](https://github.com/dotnet/sdk/issues/56645#issuecomment-6427659922)
+(the `WMC1007` ordering).
+
 ## Requirements
 
 - Windows x64 and PowerShell 7
