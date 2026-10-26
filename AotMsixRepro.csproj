@@ -1,0 +1,61 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net11.0-windows10.0.19041.0</TargetFramework>
+    <TargetPlatformMinVersion>10.0.19041.0</TargetPlatformMinVersion>
+    <RootNamespace>AotMsixRepro</RootNamespace>
+    <Platforms>x64;arm64</Platforms>
+    <RuntimeIdentifiers>win-x64;win-arm64</RuntimeIdentifiers>
+    <Nullable>enable</Nullable>
+    <UseWinUI>true</UseWinUI>
+    <EnableMsixTooling>true</EnableMsixTooling>
+    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+    <WindowsPackageType>MSIX</WindowsPackageType>
+    <AppxPackageSigningEnabled>false</AppxPackageSigningEnabled>
+    <AppxBundle>Never</AppxBundle>
+    <PublishAot>true</PublishAot>
+    <!-- CsWinRT's NativeAOT interop code uses unsafe blocks. -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!--
+      Unrelated to optimized publish: without this, the MSIX payload gets both
+      the managed and the native AotMsixRepro.pdb and fails with APPX1101.
+    -->
+    <DebugType>none</DebugType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.WindowsAppSDK" Version="2.5.1" />
+  </ItemGroup>
+
+  <!-- Optional: -p:MsixToolingVersion=<version> tries a newer MSIX tooling package. -->
+  <ItemGroup Condition="'$(MsixToolingVersion)' != ''">
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools.MSIX" Version="$(MsixToolingVersion)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Assets\*.png" />
+  </ItemGroup>
+
+  <!--
+    Workarounds, each off by default so repro.ps1 can show every stage.
+
+    -p:FixXamlReferences=true  Resolve references before the WinUI XAML
+                               compiler runs (dotnet/sdk#56645). Without it,
+                               optimized publish fails with WMC1007.
+    -p:FixMsixPackaging=true   Add PrepareForRun, where the MSIX tooling
+                               generates resources.pri and the package, to
+                               the optimized publish path. Without it,
+                               publish fails because resources.pri is
+                               missing, or, when bin\ still holds one from an
+                               earlier build, succeeds without an .msix.
+  -->
+  <Target Name="ResolveReferencesBeforeXamlCompile"
+          Condition="'$(FixXamlReferences)' == 'true'"
+          BeforeTargets="MarkupCompilePass1"
+          DependsOnTargets="ResolveReferences" />
+  <PropertyGroup Condition="'$(FixMsixPackaging)' == 'true' And '$(GenerateAppxPackageOnBuild)' == 'true'">
+    <_AdditionalOptimizedPublishTargets>$(_AdditionalOptimizedPublishTargets);PrepareForRun</_AdditionalOptimizedPublishTargets>
+  </PropertyGroup>
+
+</Project>
